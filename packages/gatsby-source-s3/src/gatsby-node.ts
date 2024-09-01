@@ -123,7 +123,7 @@ export const onCreateNode: GatsbyNode["onCreateNode"] = async function ({
   reporter,
   createNodeId,
 }: CreateNodeArgs<NodeType>) {
-  if (node.internal.type === "S3Object" && node.Key && isImage(node.Key)) {
+  if (node.internal.type === "S3Object" && node.Key) {
     try {
       // download image file and save as node
       const imageFile = await createRemoteFileNode({
