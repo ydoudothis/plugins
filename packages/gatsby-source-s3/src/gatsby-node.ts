@@ -96,7 +96,26 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
         Bucket,
         Key,
       });
+      const response = await s3.send(command);
+      const bodyString = await response?.Body?.transformToString();
+
       const url = await getSignedUrl(s3, command, { expiresIn: expiration });
+
+      let tmpPath = "";
+
+      if(Key.indexOf("production/") === 0) {
+        tmpPath = Key.substr(10);
+      } else {
+        if(Key.indexOf("development/") === 0) {
+          tmpPath = Key.substr(11);
+        }
+      }
+
+      if(tmpPath.lastIndexOf("/") !== tmpPath.indexOf("/")) {
+        tmpPath = tmpPath.substring(0, tmpPath.lastIndexOf("/"));
+      }
+
+      const basePath = tmpPath;
       createNode({
         ...object,
         url,
@@ -104,6 +123,8 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
         id: createNodeId(`s3-object-${Key}`),
         parent: undefined,
         children: [],
+        body: bodyString,
+        basePath: basePath,
         internal: {
           type: "S3Object",
           content: JSON.stringify(object),
