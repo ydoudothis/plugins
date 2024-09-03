@@ -128,7 +128,7 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
         internal: {
           type: "S3Object",
           content: JSON.stringify(object),
-          contentDigest: createContentDigest(object),
+          contentDigest: createContentDigest({...object, bodyString}),
         },
       });
     }
