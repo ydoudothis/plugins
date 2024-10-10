@@ -1,7 +1,7 @@
 {
   "name": "gatsby-source-s3-hyperdrive",
   "description": "A Gatsby plugin to source objects and images from AWS S3",
-  "version": "4.1.8",
+  "version": "4.1.9",
   "contributors": [
     "Robin Métral <robin@metral.ch>",
     "Alex Moon <alex.jared.moon@gmail.com>",
@@ -28,7 +28,16 @@
     "cypress": "^12.17.4",
     "start-server-and-test": "^2.0.3"
   },
-  "files": [ "dist", "tests", ".babelrc", "cypress.config.js", "index.js", "gatsby-node.js", "package.json", "README.md" ],
+  "files": [
+    "dist",
+    "tests",
+    ".babelrc",
+    "cypress.config.js",
+    "index.js",
+    "gatsby-node.js",
+    "package.json",
+    "README.md"
+  ],
   "scripts": {
     "build": "babel src --out-dir ./dist --ignore \"**/__tests__,**/*.d.ts\" --extensions \".ts,.js\"",
     "start": "(cd ../../integration-tests/source-s3 && yarn build && yarn serve)",
@@ -39,7 +48,8 @@
     "@aws-sdk/client-s3": "^3.484.0",
     "@aws-sdk/s3-request-presigner": "^3.484.0",
     "@babel/runtime": "^7.23.7",
-    "gatsby-source-filesystem": "^5.13.0"
+    "gatsby-source-filesystem": "^5.13.0",
+    "jsdom": "^25.0.1"
   },
   "peerDependencies": {
     "gatsby": "^4.5.2 || ^5.0.0"
