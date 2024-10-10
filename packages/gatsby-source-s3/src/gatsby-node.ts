@@ -162,11 +162,26 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
           console.log(i);
           const section = sections[i];
           const sectionId = section.id;
+          const sectionHtml = section.outerHTML;
 
-          const sectionHtml = section.outerHTML
-          // console.log(sectionHtml);
-          // Do stuff
-
+          console.log(sectionId);
+          const subSections = section.querySelectorAll("section");
+          let pageNav = [];
+          for (var subSectionIndex = 0; subSectionIndex < subSections.length; subSectionIndex++) {
+            const cSubSection = subSections[subSectionIndex];
+            let subHeadline = cSubSection.querySelector("h2");
+            if(subHeadline) {
+              console.log(subHeadline.innerHTML);
+              pageNav.push({
+                section: {
+                  id: "",
+                  level: 0,
+                  path: `#${cSubSection.id}`,
+                  title: subHeadline.innerHTML
+                }
+              });
+            }
+          }
 
           createNode({
             ...object,
@@ -179,6 +194,7 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
             body: sectionHtml,
             basePath: basePath,
             sitemap: sitemap,
+            pageNav: pageNav,
             internal: {
               type: "S3Object",
               content: JSON.stringify(object),
