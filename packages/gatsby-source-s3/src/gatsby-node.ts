@@ -11,6 +11,9 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { CreateNodeArgs, GatsbyNode, PluginOptions } from "gatsby";
 
 const isImage = (key: string): boolean => /\.(jpe?g|png|webp|tiff?)$/i.test(key);
+const isHTML = key => /\.(html?)$/i.test(key);
+const jsdom = require("jsdom");
+const { JSDOM } = jsdom;
 
 interface PluginOptionsType extends PluginOptions {
   aws: S3ClientConfig;
@@ -20,7 +23,7 @@ interface PluginOptionsType extends PluginOptions {
 
 type ObjectType = AWS_S3._Object & { Bucket: string };
 
-type NodeType = ObjectType & { url: string; [key: string]: string };
+type NodeType = ObjectType & { url: string;[key: string]: string };
 
 // source all objects from s3
 export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
@@ -101,36 +104,93 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
 
       const url = await getSignedUrl(s3, command, { expiresIn: expiration });
 
-      let tmpPath = "";
+      if (isHTML(Key)) {
+        let tmpPath = "";
+        if (Key.indexOf("production/") === 0) {
+          tmpPath = Key.substr(10);
+        } else {
+          if (Key.indexOf("development/") === 0) {
+            tmpPath = Key.substr(11);
+          }
+        }
 
-      if(Key.indexOf("production/") === 0) {
-        tmpPath = Key.substr(10);
-      } else {
-        if(Key.indexOf("development/") === 0) {
-          tmpPath = Key.substr(11);
+        if (tmpPath.lastIndexOf("/") !== tmpPath.indexOf("/")) {
+          tmpPath = tmpPath.substring(0, tmpPath.lastIndexOf("/"));
+        }
+        const basePath = tmpPath;
+
+        // console.log(bodyString);
+        const dom = new JSDOM('<!DOCTYPE html><head></head><body>' + bodyString + '</body>');
+        let document = dom.window.document;
+        const headerLinks = document.querySelectorAll("a.headerlink");
+        for (var i = 0; i < headerLinks.length; i++) {
+          headerLinks[i].remove();
+        }
+        const sections = document.querySelectorAll("body > section"); // "Hello world"
+        // console.log(dom.window.document.body);
+        console.log(sections);
+        let sitemap = {
+          id: "",
+          level: 0,
+          path: "index.html",
+          title: Key,
+          subsections: [],
+          basePath: basePath
+        }
+
+        for (var i = 0; i < sections.length; i++) {
+          const section = sections[i];
+          const sectionId = section.id;
+          let headline = section.querySelector("h1");
+          // console.log(headline.innerText);
+          // console.log(headline.innerHTML);
+
+          sitemap.subsections.push(
+            {
+              section: {
+                id: "",
+                level: 0,
+                path: `${i + 1}-${sectionId}`,
+                title: headline.innerHTML
+              },
+              subsections: []
+            }
+          )
+        }
+
+        for (var i = 0; i < sections.length; i++) {
+          console.log(i);
+          const section = sections[i];
+          const sectionId = section.id;
+
+          const sectionHtml = section.outerHTML
+          // console.log(sectionHtml);
+          // Do stuff
+
+
+          createNode({
+            ...object,
+            url,
+            // node meta
+            id: createNodeId(`s3-object-${Key}-${sectionId}`),
+            parent: undefined,
+            slug: `${basePath}/${i + 1}-${sectionId}`,
+            children: [],
+            body: sectionHtml,
+            basePath: basePath,
+            sitemap: sitemap,
+            internal: {
+              type: "S3Object",
+              content: JSON.stringify(object),
+              contentDigest: createContentDigest({
+                ...object,
+                sectionHtml
+              })
+            }
+          });
         }
       }
 
-      if(tmpPath.lastIndexOf("/") !== tmpPath.indexOf("/")) {
-        tmpPath = tmpPath.substring(0, tmpPath.lastIndexOf("/"));
-      }
-
-      const basePath = tmpPath;
-      createNode({
-        ...object,
-        url,
-        // node meta
-        id: createNodeId(`s3-object-${Key}`),
-        parent: undefined,
-        children: [],
-        body: bodyString,
-        basePath: basePath,
-        internal: {
-          type: "S3Object",
-          content: JSON.stringify(object),
-          contentDigest: createContentDigest({...object, bodyString}),
-        },
-      });
     }
   } catch (error) {
     reporter.error(`Error sourcing nodes: ${error}`);
