@@ -120,7 +120,7 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
         const basePath = tmpPath;
 
         // console.log(bodyString);
-        const dom = new JSDOM('<!DOCTYPE html><head></head><body>' + bodyString + '</body>');
+        const dom = new JSDOM(bodyString);
         let document = dom.window.document;
         const headerLinks = document.querySelectorAll("a.headerlink");
         for (var i = 0; i < headerLinks.length; i++) {
@@ -133,7 +133,7 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
           id: "",
           level: 0,
           path: "index.html",
-          title: Key,
+          title: document.title? document.title: Key,
           subsections: [],
           basePath: basePath
         }
@@ -157,6 +157,30 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
             }
           )
         }
+
+        //Create sitemap object
+        createNode({
+          // ...object,
+          // url,
+          // // node meta
+          Key: object.Key + '.sitemap',
+          id: createNodeId(`s3-sitemap-${Key}`),
+          parent: undefined,
+          // slug: `${basePath}/${sectionIdToPath[sectionId]}`,
+          // children: [],
+          // body: sectionHtml,
+          basePath: basePath,
+          sitemap: sitemap,
+          // pageNav: pageNav,
+          internal: {
+            type: "S3Sitemap",
+            content: JSON.stringify(object),
+            contentDigest: createContentDigest({
+              ...object,
+              bodyString
+            })
+          }
+        });
 
         for (var i = 0; i < sections.length; i++) {
           console.log(i);
