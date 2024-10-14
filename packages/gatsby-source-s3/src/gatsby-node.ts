@@ -230,7 +230,25 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
           });
         }
       }
-
+      else {
+        if(isImage(Key)) {
+          createNode({
+            ...object,
+            url,
+            // node meta
+            id: createNodeId(`s3-image-${Key}`),
+            parent: undefined,
+            children: [],
+            internal: {
+              type: "S3Image",
+              content: JSON.stringify(object),
+              contentDigest: createContentDigest({
+                ...object
+              })
+            }
+          });
+        }
+      }
     }
   } catch (error) {
     reporter.error(`Error sourcing nodes: ${error}`);
@@ -244,7 +262,7 @@ export const onCreateNode: GatsbyNode["onCreateNode"] = async function ({
   reporter,
   createNodeId,
 }: CreateNodeArgs<NodeType>) {
-  if (node.internal.type === "S3Object" && node.Key) {
+  if (node.internal.type === "S3Image" && node.Key) {
     try {
       // download image file and save as node
       const imageFile = await createRemoteFileNode({
@@ -260,7 +278,7 @@ export const onCreateNode: GatsbyNode["onCreateNode"] = async function ({
         createNodeField({ node, name: "localFile", value: imageFile.id });
       }
     } catch (error) {
-      reporter.error(`Error creating file node for S3 object key "${node.Key}": ${error}`);
+      reporter.error(`Error creating file node for S3 image key "${node.Key}": ${error}`);
     }
   }
 };
@@ -269,7 +287,7 @@ export const createSchemaCustomization: GatsbyNode["createSchemaCustomization"] 
   actions,
 }) {
   actions.createTypes(`
-    type S3Object implements Node {
+    type S3Image implements Node {
       Key: String!
       Bucket: String!
       LastModified: Date! @dateformat
