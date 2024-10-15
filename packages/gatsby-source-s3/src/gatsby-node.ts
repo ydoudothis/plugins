@@ -10,7 +10,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import type { CreateNodeArgs, GatsbyNode, PluginOptions } from "gatsby";
 
-const isImage = (key: string): boolean => /\.(jpe?g|png|webp|tiff?)$/i.test(key);
+const isImage = (key: string): boolean => /\.(jpe?g|png|gif|webp|tiff?)$/i.test(key);
 const isHTML = key => /\.(html?)$/i.test(key);
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
