@@ -91,6 +91,41 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
     // flatten objects
     const objects = allBucketsObjects.flat();
 
+    let versions: string[] = [];
+    for (const object of objects) {
+      const {
+        //Bucket,
+        Key
+      } = object;
+
+      if(Key && isHTML(Key)) {
+        let tmpPath = "";
+        if (Key.indexOf("production/") === 0) {
+          tmpPath = Key.substr(10);
+        } else {
+          if (Key.indexOf("development/") === 0) {
+            tmpPath = Key.substr(11);
+          }
+        }
+        const indexOfVersions = tmpPath.indexOf('/versions/');
+
+        if(indexOfVersions !== -1) {
+          let basePath = tmpPath.substring(0, indexOfVersions);
+          let version = tmpPath.substring(indexOfVersions + ('/versions/'.length));
+          version = version.substring(0, version.indexOf('/'));
+          console.log(basePath + ' ->' + tmpPath + ' is version')
+          console.log(version);
+
+          if(basePath) {
+            if(!versions[basePath]) {
+              versions[basePath] = [{path: '', title: 'latest'}];
+            }   
+            versions[basePath].push({path: '/'+version, title: version});
+          }
+        } 
+      }
+    }
+
     // create file nodes
     for (const object of objects) {
       const { Bucket, Key } = object;
@@ -117,7 +152,19 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
         if (tmpPath.lastIndexOf("/") !== tmpPath.indexOf("/")) {
           tmpPath = tmpPath.substring(0, tmpPath.lastIndexOf("/"));
         }
-        const basePath = tmpPath;
+        let basePath = tmpPath;
+
+        const indexOfVersions = basePath.indexOf('/versions/');
+        const isVersion = indexOfVersions !== -1;
+        let basePathWithVersion = basePath;
+        let versionPath = '';
+
+        if(isVersion ===  true) {
+          basePath = basePath.replace('/versions', '');
+          basePathWithVersion = basePath;
+          versionPath = basePath.substring(basePath.lastIndexOf('/'));
+          basePath = basePath.substring(0, basePath.lastIndexOf("/"));
+        }
 
         // console.log(bodyString);
         const dom = new JSDOM(bodyString);
@@ -128,14 +175,16 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
         }
         const sections = document.querySelectorAll("body > section"); // "Hello world"
         // console.log(dom.window.document.body);
-        console.log(sections);
+        //console.log(sections);
         let sitemap = {
           id: "",
           level: 0,
           path: "index.html",
           title: document.title? document.title: Key,
           subsections: [],
-          basePath: basePath
+          basePath: basePath,
+          isVersion: isVersion,
+          versions: versions[basePath]
         }
 
         for (var i = 0; i < sections.length; i++) {
@@ -170,6 +219,8 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
           // children: [],
           // body: sectionHtml,
           basePath: basePath,
+          basePathWithVersion: basePathWithVersion,
+          versionPath: versionPath,
           sitemap: sitemap,
           // pageNav: pageNav,
           internal: {
@@ -183,19 +234,19 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
         });
 
         for (var i = 0; i < sections.length; i++) {
-          console.log(i);
+          //console.log(i);
           const section = sections[i];
           const sectionId = section.id;
           const sectionHtml = section.outerHTML;
 
-          console.log(sectionId);
+          //console.log(sectionId);
           const subSections = section.querySelectorAll("section");
           let pageNav = [];
           for (var subSectionIndex = 0; subSectionIndex < subSections.length; subSectionIndex++) {
             const cSubSection = subSections[subSectionIndex];
             let subHeadline = cSubSection.querySelector("h2");
             if(subHeadline) {
-              console.log(subHeadline.innerHTML);
+              //console.log(subHeadline.innerHTML);
               pageNav.push({
                 section: {
                   id: "",
@@ -213,10 +264,12 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
             // node meta
             id: createNodeId(`s3-object-${Key}-${sectionId}`),
             parent: undefined,
-            slug: `${basePath}/${i + 1}-${sectionId}`,
+            slug: `${basePathWithVersion}/${i + 1}-${sectionId}`,
             children: [],
             body: sectionHtml,
             basePath: basePath,
+            basePathWithVersion: basePathWithVersion,
+            versionPath: versionPath,
             sitemap: sitemap,
             pageNav: pageNav,
             internal: {
