@@ -238,6 +238,7 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
           const section = sections[i];
           const sectionId = section.id;
           const sectionHtml = section.outerHTML;
+          const sectionHeadline = section.querySelector("h1");
 
           //console.log(sectionId);
           const subSections = section.querySelectorAll("section");
@@ -272,6 +273,7 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
             versionPath: versionPath,
             sitemap: sitemap,
             pageNav: pageNav,
+            title: sectionHeadline?.innerHTML,
             internal: {
               type: "S3Object",
               content: JSON.stringify(object),
