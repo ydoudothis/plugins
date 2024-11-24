@@ -307,3 +307,7 @@ export const createSchemaCustomization: GatsbyNode["createSchemaCustomization"] 
     }
   `);
 };
+
+export {listAllS3Objects} from "./helper";
+
+exports.default = "gatsby-source-s3-hyperdrive"; 
