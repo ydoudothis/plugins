@@ -9,6 +9,7 @@ import AWS_S3, {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import type { CreateNodeArgs, GatsbyNode, PluginOptions } from "gatsby";
+import { listAllS3Objects } from "./helper";
 
 const isImage = (key: string): boolean => /\.(jpe?g|png|gif|webp|tiff?)$/i.test(key);
 const isHTML = key => /\.(html?)$/i.test(key);
@@ -37,55 +38,10 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
 
   reporter.verbose(`AWS S3 Config: ${JSON.stringify(s3.config, undefined, 2)}`);
 
-  // get objects
-  const getS3ListObjects = async (parameters: { Bucket: string; Marker?: string }) => {
-    const command = new ListObjectsCommand(parameters);
-    return await s3.send(command);
-  };
-
-  const listAllS3Objects = async (bucket: string) => {
-    const allS3Objects: ObjectType[] = [];
-
-    try {
-      const data = await getS3ListObjects({ Bucket: bucket });
-
-      if (data && data.Contents) {
-        for (const object of data.Contents) {
-          allS3Objects.push({ ...object, Bucket: bucket });
-        }
-      } else {
-        reporter.error(
-          `Error processing objects from bucket "${bucket}". Is it empty?`,
-          new Error("No object in Bucket"),
-          "gatsby-source-s3",
-        );
-      }
-
-      let nextToken = data && data.IsTruncated && data.NextMarker;
-
-      while (nextToken) {
-        const data = await getS3ListObjects({
-          Bucket: bucket,
-          Marker: nextToken,
-        });
-
-        if (data && data.Contents) {
-          for (const object of data.Contents) {
-            allS3Objects.push({ ...object, Bucket: bucket });
-          }
-        }
-        nextToken = data && data.IsTruncated && data.NextMarker;
-      }
-    } catch (error: unknown) {
-      reporter.panicOnBuild(`Error listing S3 objects on bucket "${bucket}"`, error as Error);
-    }
-
-    return allS3Objects;
-  };
 
   try {
     const allBucketsObjects: ObjectType[][] = await Promise.all(
-      buckets.map((bucket) => listAllS3Objects(bucket)),
+      buckets.map((bucket) => listAllS3Objects(s3, reporter, bucket)),
     );
 
     // flatten objects
