@@ -91,7 +91,3 @@ export const createSchemaCustomization: GatsbyNode["createSchemaCustomization"] 
     }
   `);
 };
-
-export {listAllS3Objects, processBucketObjects} from "./helper";
-
-exports.default = "gatsby-source-s3-hyperdrive"; 
