@@ -17659,6 +17659,7 @@ __metadata:
     babel-preset-gatsby-package: "npm:^3.13.0"
     cypress: "npm:^12.17.4"
     gatsby-source-filesystem: "npm:^5.13.0"
+    jest: "npm:^29.7.0"
     jsdom: "npm:^25.0.1"
     linkedom: "npm:^0.18.5"
     start-server-and-test: "npm:^2.0.3"
