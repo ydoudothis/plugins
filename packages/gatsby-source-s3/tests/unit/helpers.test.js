@@ -115,10 +115,12 @@ test('processBucketObjects - no html', () => {
     }
 
     processBucketObjects(objects, versions, createNode, createNodeId, createContentDigest);
-    console.log(nodes);
+    // console.log(nodes);
     expect(nodes).toEqual([]);
 });
 
+
+//TODO add test without html, head and body tags
 
 test('processBucketObjects - one section', () => {
 
@@ -134,7 +136,7 @@ test('processBucketObjects - one section', () => {
             },
             Bucket: 'ublox-documentation-test',
             url: 'https://www.u-blox.com/en/documentation/test-1',
-            bodyString: "<section id='headline-1'><h1>headline</h1><div>Lorem Ipsum</div></section>",
+            bodyString: "<html><head></head><body><section id='headline-1'><h1>headline</h1><div>Lorem Ipsum</div></section></body>",
         }
     ];
 
@@ -194,7 +196,7 @@ test('processBucketObjects - one section with meta tags', () => {
     }
 
     processBucketObjects(objects, versions, createNode, createNodeId, createContentDigest);
-    console.log(nodes);
+    // console.log(nodes);
     expect(nodes.length).toEqual(2);
     const siteMapNode = nodes[0];
     const contentNode = nodes[1];
@@ -242,7 +244,7 @@ test('processBucketObjects - multiple sections with meta tags', () => {
     }
 
     processBucketObjects(objects, versions, createNode, createNodeId, createContentDigest);
-    console.log(nodes);
+    // console.log(nodes);
     expect(nodes.length).toEqual(4);
     const siteMapNode = nodes[0];
     const contentNode = nodes[1];
