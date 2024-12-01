@@ -37,7 +37,7 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
 
   try {
     const allBucketsObjects: ObjectType[][] = await Promise.all(
-      buckets.map((bucket) => listAllS3Objects(s3, reporter, bucket)),
+      buckets.map((bucket) => listAllS3Objects(s3, reporter, bucket, 'production/')),
     );
 
     // flatten objects

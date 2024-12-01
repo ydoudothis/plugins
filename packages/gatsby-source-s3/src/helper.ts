@@ -18,17 +18,17 @@ type ObjectType = AWS_S3._Object & { Bucket: string };
 
 
 // get objects
-const getS3ListObjects = async (parameters: { Bucket: string; Marker?: string, }, s3: any) => {
+const getS3ListObjects = async (parameters: { Bucket: string; Prefix: string; Marker?: string, }, s3: any) => {
   const command = new ListObjectsCommand(parameters);
   return await s3.send(command);
 };
 
 
-export async function listAllS3Objects(s3, reporter, bucket: string) {
+export async function listAllS3Objects(s3, reporter, bucket: string, prefix: string) {
   const allS3Objects: ObjectType[] = [];
 
   try {
-    const data = await getS3ListObjects({ Bucket: bucket }, s3);
+    const data = await getS3ListObjects({ Bucket: bucket, Prefix: prefix }, s3);
 
     if (data && data.Contents) {
       for (const object of data.Contents) {
@@ -80,8 +80,8 @@ export function processBucketObjectsVersions(objects) {
       if (Key.indexOf("production/") === 0) {
         tmpPath = Key.substr(10);
       } else {
-        if (Key.indexOf("development/") === 0) {
-          tmpPath = Key.substr(11);
+        if (Key.indexOf("preview/") === 0) {
+          tmpPath = Key.substr(7);
         }
       }
       const indexOfVersions = tmpPath.indexOf('/versions/');
@@ -134,6 +134,8 @@ export async function processBucketObjects(objects, versions, createNode, create
   // create file nodes
   for (const object of objects) {
     const { Bucket, Key } = object;
+    console.log('--------------------------------');
+    console.log(object.Key);
     // // get pre-signed URL
     // const command = new GetObjectCommand({
     //   Bucket,
@@ -145,12 +147,13 @@ export async function processBucketObjects(objects, versions, createNode, create
     // const url = await getSignedUrl(s3, command, { expiresIn: expiration });
 
     if (isHTML(Key)) {
+      console.log('isHTML');
       let tmpPath = "";
       if (Key.indexOf("production/") === 0) {
         tmpPath = Key.substr(10);
       } else {
-        if (Key.indexOf("development/") === 0) {
-          tmpPath = Key.substr(11);
+        if (Key.indexOf("preview/") === 0) {
+          tmpPath = Key.substr(7);
         }
       }
 
@@ -158,6 +161,7 @@ export async function processBucketObjects(objects, versions, createNode, create
         tmpPath = tmpPath.substring(0, tmpPath.lastIndexOf("/"));
       }
       let basePath = tmpPath;
+      console.log(basePath);
 
       const indexOfVersions = basePath.indexOf('/versions/');
       const isVersion = indexOfVersions !== -1;
@@ -165,6 +169,7 @@ export async function processBucketObjects(objects, versions, createNode, create
       let versionPath = '';
 
       if (isVersion === true) {
+        console.log('isVersion');
         basePath = basePath.replace('/versions', '');
         basePathWithVersion = basePath;
         versionPath = basePath.substring(basePath.lastIndexOf('/'));
@@ -173,13 +178,21 @@ export async function processBucketObjects(objects, versions, createNode, create
 
       // console.log(bodyString);
       if (object.bodyString) {
+
+        let bodyString = object.bodyString;
+        if(bodyString.indexOf('<html') === -1) {
+          let indexDocType = bodyString.indexOf('<!DOCTYPE html>');
+          if( indexDocType === 0 ) {
+            bodyString = '<!DOCTYPE html><html>'+bodyString.substr(15);
+          } else {
+            if(indexDocType === -1) {
+              bodyString = '<html>'+bodyString;
+            }
+          }
+        }
         const {
-          // note, these are *not* globals
-          window, document, customElements,
-          HTMLElement,
-          Event, CustomEvent
-          // other exports ..
-        } = parseHTML(object.bodyString);
+          document
+        } = parseHTML(bodyString);
         // const dom = new JSDOM(object.bodyString);
         // let document = dom.window.document;
         const headerLinks = document.querySelectorAll("a.headerlink");
@@ -188,7 +201,8 @@ export async function processBucketObjects(objects, versions, createNode, create
         }
         const sections = document.querySelectorAll("body > section"); // "Hello world"
         // console.log(dom.window.document.body);
-        //console.log(sections);
+        let titleNode = document.head.querySelector("title");
+        console.log(titleNode?.innerHTML);
         let sitemap = {
           id: "",
           level: 0,
@@ -279,6 +293,9 @@ export async function processBucketObjects(objects, versions, createNode, create
             Key: object.Key,
             LastModified: object.LastModified,
             url: object.url,
+            Bucket: object.Bucket,
+            ETag: object.ETag,
+            Size: object.Size,
             // node meta
             id: createNodeId(`s3-object-${Key}-${sectionId}`),
             parent: undefined,
@@ -305,6 +322,7 @@ export async function processBucketObjects(objects, versions, createNode, create
     }
     else {
       if (isImage(Key)) {
+        console.log('isImage');
         createNode({
           ...object,
           url: object.url,

@@ -184,7 +184,7 @@ test('processBucketObjects - one section with meta tags', () => {
             },
             Bucket: 'ublox-documentation-test',
             url: 'https://www.u-blox.com/en/documentation/test-1',
-            bodyString: "<html><head><title>documentation title</title></head><body><section id='headline-1'><h1>headline</h1><div>Lorem Ipsum</div></section></body></html>",
+            bodyString: "<!DOCTYPE html><head><title>documentation title</title></head><body><section id='headline-1'><h1>headline</h1><div>Lorem Ipsum</div></section></body></html>",
         }
     ];
 
