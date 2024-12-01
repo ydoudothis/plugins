@@ -1,9 +1,9 @@
 
 import AWS_S3, {
-    GetObjectCommand,
-    ListObjectsCommand,
-    S3Client,
-    S3ClientConfig,
+  GetObjectCommand,
+  ListObjectsCommand,
+  S3Client,
+  S3ClientConfig,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -12,56 +12,56 @@ const isHTML = key => /\.(html?)$/i.test(key);
 
 // const jsdom = require("jsdom");
 // const { JSDOM } = jsdom;
-import {DOMParser, parseHTML} from 'linkedom';
+import { DOMParser, parseHTML } from 'linkedom';
 
 type ObjectType = AWS_S3._Object & { Bucket: string };
 
 
 // get objects
 const getS3ListObjects = async (parameters: { Bucket: string; Marker?: string, }, s3: any) => {
-    const command = new ListObjectsCommand(parameters);
-    return await s3.send(command);
+  const command = new ListObjectsCommand(parameters);
+  return await s3.send(command);
 };
 
 
 export async function listAllS3Objects(s3, reporter, bucket: string) {
-    const allS3Objects: ObjectType[] = [];
+  const allS3Objects: ObjectType[] = [];
 
-    try {
-        const data = await getS3ListObjects({ Bucket: bucket }, s3);
+  try {
+    const data = await getS3ListObjects({ Bucket: bucket }, s3);
 
-        if (data && data.Contents) {
-            for (const object of data.Contents) {
-                allS3Objects.push({ ...object, Bucket: bucket });
-            }
-        } else {
-            reporter.error(
-                `Error processing objects from bucket "${bucket}". Is it empty?`,
-                new Error("No object in Bucket"),
-                "gatsby-source-s3",
-            );
-        }
-
-        let nextToken = data && data.IsTruncated && data.NextMarker;
-
-        while (nextToken) {
-            const data = await getS3ListObjects({
-                Bucket: bucket,
-                Marker: nextToken,
-            });
-
-            if (data && data.Contents) {
-                for (const object of data.Contents) {
-                    allS3Objects.push({ ...object, Bucket: bucket });
-                }
-            }
-            nextToken = data && data.IsTruncated && data.NextMarker;
-        }
-    } catch (error: unknown) {
-        reporter.panicOnBuild(`Error listing S3 objects on bucket "${bucket}"`, error as Error);
+    if (data && data.Contents) {
+      for (const object of data.Contents) {
+        allS3Objects.push({ ...object, Bucket: bucket });
+      }
+    } else {
+      reporter.error(
+        `Error processing objects from bucket "${bucket}". Is it empty?`,
+        new Error("No object in Bucket"),
+        "gatsby-source-s3",
+      );
     }
 
-    return allS3Objects;
+    let nextToken = data && data.IsTruncated && data.NextMarker;
+
+    while (nextToken) {
+      const data = await getS3ListObjects({
+        Bucket: bucket,
+        Marker: nextToken,
+      });
+
+      if (data && data.Contents) {
+        for (const object of data.Contents) {
+          allS3Objects.push({ ...object, Bucket: bucket });
+        }
+      }
+      nextToken = data && data.IsTruncated && data.NextMarker;
+    }
+  } catch (error: unknown) {
+    reporter.panicOnBuild(`Error listing S3 objects on bucket "${bucket}"`, error as Error);
+  }
+
+  return allS3Objects;
 };
 
 
@@ -74,7 +74,7 @@ export function processBucketObjectsVersions(objects) {
       Key
     } = object;
 
-    if(Key && isHTML(Key)) {
+    if (Key && isHTML(Key)) {
       // console.log('isHTML')
       let tmpPath = "";
       if (Key.indexOf("production/") === 0) {
@@ -86,7 +86,7 @@ export function processBucketObjectsVersions(objects) {
       }
       const indexOfVersions = tmpPath.indexOf('/versions/');
 
-      if(indexOfVersions !== -1) {
+      if (indexOfVersions !== -1) {
         // console.log('isVersions')
         let basePath = tmpPath.substring(0, indexOfVersions);
         let version = tmpPath.substring(indexOfVersions + ('/versions/'.length));
@@ -94,13 +94,13 @@ export function processBucketObjectsVersions(objects) {
         // console.log(basePath + ' ->' + tmpPath + ' is version')
         // console.log(version);
 
-        if(basePath) {
-          if(!versions[basePath]) {
-            versions[basePath] = [{path: '', title: 'latest'}];
-          }   
-          versions[basePath].push({path: '/'+version, title: version});
+        if (basePath) {
+          if (!versions[basePath]) {
+            versions[basePath] = [{ path: '', title: 'latest' }];
+          }
+          versions[basePath].push({ path: '/' + version, title: version });
         }
-      } 
+      }
     }
   }
 
@@ -131,54 +131,55 @@ export async function loadBucketObjectsBody(s3, objects, expiration) {
 export async function processBucketObjects(objects, versions, createNode, createNodeId, createContentDigest) {
 
 
-    // create file nodes
-    for (const object of objects) {
-      const { Bucket, Key } = object;
-      // // get pre-signed URL
-      // const command = new GetObjectCommand({
-      //   Bucket,
-      //   Key,
-      // });
-      // const response = await s3.send(command);
-      // const bodyString = await response?.Body?.transformToString();
+  // create file nodes
+  for (const object of objects) {
+    const { Bucket, Key } = object;
+    // // get pre-signed URL
+    // const command = new GetObjectCommand({
+    //   Bucket,
+    //   Key,
+    // });
+    // const response = await s3.send(command);
+    // const bodyString = await response?.Body?.transformToString();
 
-      // const url = await getSignedUrl(s3, command, { expiresIn: expiration });
+    // const url = await getSignedUrl(s3, command, { expiresIn: expiration });
 
-      if (isHTML(Key)) {
-        let tmpPath = "";
-        if (Key.indexOf("production/") === 0) {
-          tmpPath = Key.substr(10);
-        } else {
-          if (Key.indexOf("development/") === 0) {
-            tmpPath = Key.substr(11);
-          }
+    if (isHTML(Key)) {
+      let tmpPath = "";
+      if (Key.indexOf("production/") === 0) {
+        tmpPath = Key.substr(10);
+      } else {
+        if (Key.indexOf("development/") === 0) {
+          tmpPath = Key.substr(11);
         }
+      }
 
-        if (tmpPath.lastIndexOf("/") !== tmpPath.indexOf("/")) {
-          tmpPath = tmpPath.substring(0, tmpPath.lastIndexOf("/"));
-        }
-        let basePath = tmpPath;
+      if (tmpPath.lastIndexOf("/") !== tmpPath.indexOf("/")) {
+        tmpPath = tmpPath.substring(0, tmpPath.lastIndexOf("/"));
+      }
+      let basePath = tmpPath;
 
-        const indexOfVersions = basePath.indexOf('/versions/');
-        const isVersion = indexOfVersions !== -1;
-        let basePathWithVersion = basePath;
-        let versionPath = '';
+      const indexOfVersions = basePath.indexOf('/versions/');
+      const isVersion = indexOfVersions !== -1;
+      let basePathWithVersion = basePath;
+      let versionPath = '';
 
-        if(isVersion ===  true) {
-          basePath = basePath.replace('/versions', '');
-          basePathWithVersion = basePath;
-          versionPath = basePath.substring(basePath.lastIndexOf('/'));
-          basePath = basePath.substring(0, basePath.lastIndexOf("/"));
-        }
+      if (isVersion === true) {
+        basePath = basePath.replace('/versions', '');
+        basePathWithVersion = basePath;
+        versionPath = basePath.substring(basePath.lastIndexOf('/'));
+        basePath = basePath.substring(0, basePath.lastIndexOf("/"));
+      }
 
-        // console.log(bodyString);
+      // console.log(bodyString);
+      if (object.bodyString) {
         const {
-            // note, these are *not* globals
-            window, document, customElements,
-            HTMLElement,
-            Event, CustomEvent
-            // other exports ..
-          } = parseHTML(object.bodyString);
+          // note, these are *not* globals
+          window, document, customElements,
+          HTMLElement,
+          Event, CustomEvent
+          // other exports ..
+        } = parseHTML(object.bodyString);
         // const dom = new JSDOM(object.bodyString);
         // let document = dom.window.document;
         const headerLinks = document.querySelectorAll("a.headerlink");
@@ -192,7 +193,7 @@ export async function processBucketObjects(objects, versions, createNode, create
           id: "",
           level: 0,
           path: "index.html",
-          title: document.title? document.title: Key,
+          title: document.title ? document.title : Key,
           subsections: [],
           basePath: basePath,
           isVersion: isVersion,
@@ -219,7 +220,7 @@ export async function processBucketObjects(objects, versions, createNode, create
           )
         }
 
-        if(sitemap?.subsections?.length > 0) {
+        if (sitemap?.subsections?.length > 0) {
 
           //Create sitemap object
           createNode({
@@ -260,7 +261,7 @@ export async function processBucketObjects(objects, versions, createNode, create
           for (var subSectionIndex = 0; subSectionIndex < subSections.length; subSectionIndex++) {
             const cSubSection = subSections[subSectionIndex];
             let subHeadline = cSubSection.querySelector("h2");
-            if(subHeadline) {
+            if (subHeadline) {
               //console.log(subHeadline.innerHTML);
               pageNav.push({
                 section: {
@@ -301,24 +302,25 @@ export async function processBucketObjects(objects, versions, createNode, create
           });
         }
       }
-      else {
-        if(isImage(Key)) {
-          createNode({
-            ...object,
-            url: object.url,
-            // node meta
-            id: createNodeId(`s3-image-${Key}`),
-            parent: undefined,
-            children: [],
-            internal: {
-              type: "S3Image",
-              content: JSON.stringify(object),
-              contentDigest: createContentDigest({
-                ...object
-              })
-            }
-          });
-        }
+    }
+    else {
+      if (isImage(Key)) {
+        createNode({
+          ...object,
+          url: object.url,
+          // node meta
+          id: createNodeId(`s3-image-${Key}`),
+          parent: undefined,
+          children: [],
+          internal: {
+            type: "S3Image",
+            content: JSON.stringify(object),
+            contentDigest: createContentDigest({
+              ...object
+            })
+          }
+        });
       }
     }
+  }
 }
