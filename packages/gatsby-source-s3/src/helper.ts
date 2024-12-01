@@ -10,9 +10,9 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 const isImage = (key: string): boolean => /\.(jpe?g|png|gif|webp|tiff?)$/i.test(key);
 const isHTML = key => /\.(html?)$/i.test(key);
 
-const jsdom = require("jsdom");
-const { JSDOM } = jsdom;
-// import {DOMParser, parseHTML} from 'linkedom';
+// const jsdom = require("jsdom");
+// const { JSDOM } = jsdom;
+import {DOMParser, parseHTML} from 'linkedom';
 
 type ObjectType = AWS_S3._Object & { Bucket: string };
 
@@ -172,15 +172,15 @@ export async function processBucketObjects(objects, versions, createNode, create
         }
 
         // console.log(bodyString);
-        // const {
-        //     // note, these are *not* globals
-        //     window, document, customElements,
-        //     HTMLElement,
-        //     Event, CustomEvent
-        //     // other exports ..
-        //   } = parseHTML(object.bodyString);
-        const dom = new JSDOM(object.bodyString);
-        let document = dom.window.document;
+        const {
+            // note, these are *not* globals
+            window, document, customElements,
+            HTMLElement,
+            Event, CustomEvent
+            // other exports ..
+          } = parseHTML(object.bodyString);
+        // const dom = new JSDOM(object.bodyString);
+        // let document = dom.window.document;
         const headerLinks = document.querySelectorAll("a.headerlink");
         for (var i = 0; i < headerLinks.length; i++) {
           headerLinks[i].remove();
