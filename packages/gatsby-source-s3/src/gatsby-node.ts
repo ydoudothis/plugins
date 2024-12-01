@@ -9,7 +9,7 @@ import AWS_S3, {
 // import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import type { CreateNodeArgs, GatsbyNode, PluginOptions } from "gatsby";
-import { listAllS3Objects, processBucketObjects } from "./helper";
+import { listAllS3Objects, processBucketObjectsVersions, processBucketObjects, loadBucketObjectsBody } from "./helper";
 
 
 interface PluginOptionsType extends PluginOptions {
@@ -43,7 +43,10 @@ export const sourceNodes: GatsbyNode["sourceNodes"] = async function (
     // flatten objects
     const objects = allBucketsObjects.flat();
 
-    processBucketObjects(s3, expiration, objects, createNode, createNodeId, createContentDigest);
+    const versions = processBucketObjectsVersions(objects);
+    const updatedObjects = await loadBucketObjectsBody(s3, objects, expiration);
+
+    processBucketObjects(updatedObjects, versions, createNode, createNodeId, createContentDigest);
     
   } catch (error) {
     reporter.error(`Error sourcing nodes: ${error}`);
