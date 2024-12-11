@@ -1,13 +1,6 @@
 
-import AWS_S3, {
-    // GetObjectCommand,
-    // ListObjectsCommand,
-    S3Client,
-    S3ClientConfig,
-} from "@aws-sdk/client-s3";
-import { processBucketObjectsVersions, processBucketObjects } from "../../src/helper";
-
-
+import { processBucketObjectsVersions, processBucketObjects, fixInternalLinks } from "../../src/helper";
+import { parseHTML } from 'linkedom/cached';
 
 
 test('processBucketObjectsVersions - no versions', () => {
@@ -274,3 +267,43 @@ test('processBucketObjects - multiple sections with meta tags', () => {
     expect(contentNode3.body).toEqual('<section id="headline4"><h1>headline 4</h1><div>lorem ipsum 3</div></section>');
     expect(contentNode3.title).toEqual("headline 4");
 });
+
+
+
+test('fixInternalLinks - without params', () => {
+    fixInternalLinks(); // should not throw an error
+});
+
+
+test('fixInternalLinks - empty params', () => {
+
+    const html = "<html><head><title>documentation title</title></head><body><section id='headline-1'><h1>headline</h1><div>Lorem Ipsum <a id='link1' href='#headline-1'>link</a> <a id='link2' href='#headline3'>link2</a></div><section id='headline2'><h2>subheadline</h2>test</section></section><section id='headline3'><h1>headline3</h1><div>lorem ipsum 2</div></section><section id='headline4'><h1>headline 4</h1><div>lorem ipsum 3</div></section></body></html>";
+
+    const {
+        document
+    } = parseHTML(html);
+
+    fixInternalLinks(document, [], null);
+
+    expect(document.getElementById('link1').getAttribute('href')).toEqual('#headline-1');
+});
+
+
+test('fixInternalLinks', () => {
+
+    const html = "<html><head><title>documentation title</title></head><body><section id='headline-1'><h1>headline</h1><div>Lorem Ipsum <a id='link.1' href='#headline-1'>link</a> <a id='link2' href='#headline3'>link2</a></div><section id='headline2'><h2>subheadline</h2>test</section></section><section id='headline3'><h1>headline3</h1><div>lorem ipsum 2</div></section><section id='headline4'><h1>headline 4</h1><div><a id='link3' href='#link.1'>link3</a>lorem ipsum 3</div></section></body></html>";
+
+    const {
+        document
+    } = parseHTML(html);
+
+    const sections = document.querySelectorAll("body > section");
+    const basePathWithVersion = "test";
+    fixInternalLinks(document, sections, basePathWithVersion);
+
+
+    expect(document.getElementById('link\\.1').getAttribute('href')).toEqual('#headline-1');
+    expect(document.getElementById('link2').getAttribute('href')).toEqual('2-headline3#headline3');
+    expect(document.getElementById('link3').getAttribute('href')).toEqual('1-headline-1#link.1');
+});
+

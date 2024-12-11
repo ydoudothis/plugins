@@ -12,7 +12,7 @@ const isHTML = key => /\.(html?)$/i.test(key);
 
 // const jsdom = require("jsdom");
 // const { JSDOM } = jsdom;
-import { DOMParser, parseHTML } from 'linkedom';
+import { DOMParser, parseHTML } from 'linkedom/cached';
 
 type ObjectType = AWS_S3._Object & { Bucket: string };
 
@@ -127,9 +127,53 @@ export async function loadBucketObjectsBody(s3, objects, expiration) {
   return objects;
 }
 
+/** 
+ * fixes internal links within the document by updating it to correct page.
+ */
+export function fixInternalLinks(document, sections, basePathWithVersion: string) {
+  if (document) {
+    const allLinks = document.querySelectorAll("a");
+    let idToSectionHref = [];
+
+    for (let i = 0; i < allLinks.length; i++) {
+      let currentLink = allLinks[i];
+      let currentHref = currentLink.getAttribute('href');
+      let currentHrefAsSelector = currentHref
+
+      if (currentHref && currentHref.startsWith('#')) {
+        if(currentHrefAsSelector.indexOf('.') !== -1) {
+          currentHrefAsSelector = currentHrefAsSelector.replaceAll('.', '\\.');
+        }
+        const currentId = currentHref.substr(1);
+        // const elementWithId = document.querySelector(currentHref);
+        // console.log(currentHref);
+
+        for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
+          const section = sections[sectionIndex];
+          const sectionId = section.id;
+
+          if (section && !section.contains(currentLink)) {
+            if (idToSectionHref[currentId]) {
+              currentLink.href = idToSectionHref[currentId] + currentHref;
+              break;
+            } else {
+              if (sectionId == currentId || section.querySelector(currentHrefAsSelector))  {
+                currentLink.href = (sectionIndex + 1) + '-' + sectionId + currentHref;
+                idToSectionHref[currentId] = (sectionIndex + 1) + '-' + sectionId;
+                // currentLink.href = "/en/documentation/" + basePathWithVersion + '/' + (sectionIndex + 1) + '-' + sectionId + currentHref;
+                // console.log(currentLink.href);
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 
 export async function processBucketObjects(objects, versions, createNode, createNodeId, createContentDigest) {
-
 
   // create file nodes
   for (const object of objects) {
@@ -180,13 +224,13 @@ export async function processBucketObjects(objects, versions, createNode, create
       if (object.bodyString) {
 
         let bodyString = object.bodyString;
-        if(bodyString.indexOf('<html') === -1) {
+        if (bodyString.indexOf('<html') === -1) {
           let indexDocType = bodyString.indexOf('<!DOCTYPE html>');
-          if( indexDocType === 0 ) {
-            bodyString = '<!DOCTYPE html><html>'+bodyString.substr(15);
+          if (indexDocType === 0) {
+            bodyString = '<!DOCTYPE html><html>' + bodyString.substr(15);
           } else {
-            if(indexDocType === -1) {
-              bodyString = '<html>'+bodyString;
+            if (indexDocType === -1) {
+              bodyString = '<html>' + bodyString;
             }
           }
         }
@@ -196,10 +240,13 @@ export async function processBucketObjects(objects, versions, createNode, create
         // const dom = new JSDOM(object.bodyString);
         // let document = dom.window.document;
         const headerLinks = document.querySelectorAll("a.headerlink");
-        for (var i = 0; i < headerLinks.length; i++) {
+        for (let i = 0; i < headerLinks.length; i++) {
           headerLinks[i].remove();
         }
-        const sections = document.querySelectorAll("body > section"); // "Hello world"
+        const sections = document.querySelectorAll("body > section");
+
+        fixInternalLinks(document, sections, basePathWithVersion);
+
         // console.log(dom.window.document.body);
         let titleNode = document.head.querySelector("title");
         console.log(titleNode?.innerHTML);
@@ -214,7 +261,7 @@ export async function processBucketObjects(objects, versions, createNode, create
           versions: versions[basePath]
         }
 
-        for (var i = 0; i < sections.length; i++) {
+        for (let i = 0; i < sections.length; i++) {
           const section = sections[i];
           const sectionId = section.id;
           let headline = section.querySelector("h1");
@@ -262,7 +309,7 @@ export async function processBucketObjects(objects, versions, createNode, create
           });
         }
 
-        for (var i = 0; i < sections.length; i++) {
+        for (let i = 0; i < sections.length; i++) {
           //console.log(i);
           const section = sections[i];
           const sectionId = section.id;
@@ -272,7 +319,7 @@ export async function processBucketObjects(objects, versions, createNode, create
           //console.log(sectionId);
           const subSections = section.querySelectorAll("section");
           let pageNav = [];
-          for (var subSectionIndex = 0; subSectionIndex < subSections.length; subSectionIndex++) {
+          for (let subSectionIndex = 0; subSectionIndex < subSections.length; subSectionIndex++) {
             const cSubSection = subSections[subSectionIndex];
             let subHeadline = cSubSection.querySelector("h2");
             if (subHeadline) {
