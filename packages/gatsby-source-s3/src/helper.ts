@@ -173,6 +173,12 @@ export function fixInternalLinks(document, sections, basePathWithVersion: string
 }
 
 
+export function fixBase64SvgXmlImages(htmlString: string) {
+  let updatedHTML = htmlString;
+  updatedHTML = updatedHTML.replace(/\!\[(.+?)\]\((data:image\/svg\+xml;base64,.+?)\)/g, "<img src='$2' alt='$1' />");
+  return updatedHTML;
+}
+
 export async function processBucketObjects(objects, versions, createNode, createNodeId, createContentDigest) {
 
   // create file nodes
@@ -224,6 +230,7 @@ export async function processBucketObjects(objects, versions, createNode, create
       if (object.bodyString) {
 
         let bodyString = object.bodyString;
+        bodyString = fixBase64SvgXmlImages(bodyString);
         if (bodyString.indexOf('<html') === -1) {
           let indexDocType = bodyString.indexOf('<!DOCTYPE html>');
           if (indexDocType === 0) {

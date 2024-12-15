@@ -1,5 +1,5 @@
 
-import { processBucketObjectsVersions, processBucketObjects, fixInternalLinks } from "../../src/helper";
+import { processBucketObjectsVersions, processBucketObjects, fixInternalLinks, fixBase64SvgXmlImages } from "../../src/helper";
 import { parseHTML } from 'linkedom/cached';
 
 
@@ -307,3 +307,19 @@ test('fixInternalLinks', () => {
     expect(document.getElementById('link3').getAttribute('href')).toEqual('1-headline-1#link.1');
 });
 
+
+test('fixBase64SvgXmlImages - no image', () => {
+
+    const html = "<html><head></head><body>test</body>"
+    const updatedHTML = fixBase64SvgXmlImages(html);
+
+    expect(updatedHTML).toEqual(html);
+});
+
+test('fixBase64SvgXmlImages - one image', () => {
+
+    const html = "<html><head></head><body>test ![test abc](data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0sfg346zgerg)</body>"
+    const updatedHTML = fixBase64SvgXmlImages(html);
+
+    expect(updatedHTML).toEqual("<html><head></head><body>test <img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0sfg346zgerg' alt='test abc' /></body>");
+});

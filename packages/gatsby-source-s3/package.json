@@ -1,7 +1,7 @@
 {
   "name": "gatsby-source-s3-hyperdrive",
   "description": "A Gatsby plugin to source objects and images from AWS S3",
-  "version": "4.1.23",
+  "version": "4.1.24",
   "contributors": [
     "Robin Métral <robin@metral.ch>",
     "Alex Moon <alex.jared.moon@gmail.com>",
