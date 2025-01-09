@@ -1,5 +1,5 @@
 
-import { processBucketObjectsVersions, processBucketObjects, fixInternalLinks, fixBase64SvgXmlImages } from "../../src/helper";
+import { processBucketObjectsVersions, processBucketObjects, fixInternalLinks, fixBase64SvgXmlImages, sanitizeText } from "../../src/helper";
 import { parseHTML } from 'linkedom/cached';
 
 
@@ -322,4 +322,13 @@ test('fixBase64SvgXmlImages - one image', () => {
     const updatedHTML = fixBase64SvgXmlImages(html);
 
     expect(updatedHTML).toEqual("<html><head></head><body>test <img src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0sfg346zgerg' alt='test abc' /></body>");
+});
+
+
+test('sanitizeHTML', () => {
+
+    const html = "<html><head><title>Markdown Examples</title><meta name='release' content='v23.10'><meta name='version' content='v23.10.78326'><meta name='copyright' content='2024, u-blox'></head><body><script>alert();</script>test<style>body {background-color: linen;}</style><iframe src='https://www.google.de' /></body>"
+    const updatedHTML = sanitizeText(html);
+
+    expect(updatedHTML).toEqual("<html><head><title>Markdown Examples</title><meta name=\"release\" content=\"v23.10\" /><meta name=\"version\" content=\"v23.10.78326\" /><meta name=\"copyright\" content=\"2024, u-blox\" /></head><body>test</body></html>");
 });

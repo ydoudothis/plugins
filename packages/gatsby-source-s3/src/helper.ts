@@ -9,6 +9,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const isImage = (key: string): boolean => /\.(jpe?g|png|gif|webp|tiff?)$/i.test(key);
 const isHTML = key => /\.(html?)$/i.test(key);
+import sanitizeHtml from "sanitize-html";
 
 // const jsdom = require("jsdom");
 // const { JSDOM } = jsdom;
@@ -179,6 +180,173 @@ export function fixBase64SvgXmlImages(htmlString: string) {
   return updatedHTML;
 }
 
+const sanitizeOptions = {
+  allowedTags: [
+    "address",
+    "article",
+    "aside",
+    "footer",
+    "header",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "hgroup",
+    "main",
+    "nav",
+    "section",
+    "blockquote",
+    "dd",
+    "div",
+    "dl",
+    "dt",
+    "figcaption",
+    "figure",
+    "hr",
+    "li",
+    "main",
+    "ol",
+    "p",
+    "pre",
+    "ul",
+    "a",
+    "abbr",
+    "b",
+    "bdi",
+    "bdo",
+    "br",
+    "cite",
+    "code",
+    "data",
+    "dfn",
+    "em",
+    "i",
+    "kbd",
+    "mark",
+    "q",
+    "rb",
+    "rp",
+    "rt",
+    "rtc",
+    "ruby",
+    "s",
+    "samp",
+    "small",
+    "span",
+    "strong",
+    "sub",
+    "sup",
+    "time",
+    "u",
+    "var",
+    "wbr",
+    "caption",
+    "col",
+    "colgroup",
+    "table",
+    "tbody",
+    "td",
+    "tfoot",
+    "th",
+    "thead",
+    "tr",
+    "img",
+    // "iframe",
+    // "style",
+    "video",
+    "source",
+    "picture",
+    "html",
+    "head",
+    "body",
+    "meta",
+    "title"
+  ],
+  disallowedTagsMode: "discard",
+  allowedAttributes: {
+    a: ["href", "name", "target", "class", "className", "id"],
+    img: [
+      "src",
+      "srcset",
+      "alt",
+      "title",
+      "width",
+      "height",
+      "loading",
+      "class",
+      "className",
+      "id"
+    ],
+    table: ["class", "cellpadding", "cellspacing", "id"],
+    th: ["class", "scope", "rowspan", "colspan", "id"],
+    tr: ["class", "id"],
+    td: ["class", "rowspan", "colspan", "id"],
+    div: [
+      "class",
+      "style",
+      "id",
+      "className",
+      "portalid",
+      "formid",
+      "goToWebinarWebinarKey",
+      "gotowebinarwebinarkey",
+    ],
+    span: ["style", "class", "className", "id"],
+    p: ["style", "class", "className", "id"],
+    article: ["class", "className", "id"],
+    h1: ["className", "class", "id"],
+    h2: ["className", "class", "id"],
+    h3: ["className", "class", "id"],
+    h4: ["className", "class", "id"],
+    h5: ["className", "class", "id"],
+    iframe: [
+      "frameborder",
+      "height",
+      "scrolling",
+      "src",
+      "width",
+      "allow",
+      "allowfullscreen",
+      "class",
+      "className",
+      "id"
+    ],
+    meta: [
+      "content",
+      "name"
+    ],
+    video: ["controls", "height", "width", "id"],
+    source: ["src", "type", "srcset", "alt", "media", "id"],
+    section: ["id"]
+  },
+  // Lots of these won't come up by default because we don't allow them
+  selfClosing: [
+    "img",
+    "br",
+    "hr",
+    "area",
+    "base",
+    "basefont",
+    "input",
+    "link",
+    "meta",
+  ],
+  // URL schemes we permit
+  allowedSchemes: ["http", "https", "ftp", "mailto", "tel"],
+  allowedSchemesByTag: { img: ["data", "https", "http"] },
+  allowedSchemesAppliedToAttributes: ["href", "src", "cite"],
+  allowProtocolRelative: true,
+  enforceHtmlBoundary: false,
+  allowVulnerableTags: true,
+};
+
+export function sanitizeText(htmlString: string) {
+  const sanitizedText = sanitizeHtml(htmlString, sanitizeOptions);
+  return sanitizedText;
+}
+
 export async function processBucketObjects(objects, versions, createNode, createNodeId, createContentDigest) {
 
   // create file nodes
@@ -226,11 +394,15 @@ export async function processBucketObjects(objects, versions, createNode, create
         basePath = basePath.substring(0, basePath.lastIndexOf("/"));
       }
 
-      // console.log(bodyString);
       if (object.bodyString) {
+        // console.log(object.bodyString);
 
         let bodyString = object.bodyString;
         bodyString = fixBase64SvgXmlImages(bodyString);
+        bodyString = sanitizeText(bodyString)
+        // console.log('........................')
+        // console.log(sanitizeText(bodyString));
+        // console.log(bodyString);
         if (bodyString.indexOf('<html') === -1) {
           let indexDocType = bodyString.indexOf('<!DOCTYPE html>');
           if (indexDocType === 0) {
