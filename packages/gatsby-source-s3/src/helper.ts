@@ -353,7 +353,13 @@ export async function processBucketObjects(objects, versions, createNode, create
   for (const object of objects) {
     const { Bucket, Key } = object;
     console.log('--------------------------------');
-    console.log(object.Key);
+    console.log(Key);
+
+    // console.log('#/: '+ (Key.match(/\//g) || []).length);
+    if((Key.match(/\//g) || []).length <= 1) { // if path has no folders
+      console.log('skip - the path is too short');
+      continue;
+    }
     // // get pre-signed URL
     // const command = new GetObjectCommand({
     //   Bucket,
