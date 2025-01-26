@@ -88,9 +88,70 @@ export const createSchemaCustomization: GatsbyNode["createSchemaCustomization"] 
     type S3Image implements Node {
       Key: String!
       Bucket: String!
+      ETag: String!
+      url: String!
       LastModified: Date! @dateformat
       Size: Int!
       localFile: File @link(from: "fields.localFile")
+    }
+
+    type Versions {
+      path: String!
+      title: String!
+    }
+
+    type Section {
+      id: String!
+      level: Int!
+      path: String!
+      title: String!
+    }
+    
+    type Subsections {
+      section: Section
+      subsections: [Subsections!]
+    }
+
+    type PageNav {
+      section: Section
+    }
+
+    type Sitemap {
+      id: String!
+      level: Int!
+      path: String!
+      title: String!
+      basePath: String!
+      isVersion: Boolean!
+      versions: [Versions!]
+      subsections: [Subsections]
+    }
+
+    type S3Sitemap implements Node {
+      Key: String!
+      Bucket: String!
+      basePath: String!
+      basePathWithVersion: String!
+      versionPath: String!
+      isVersion: Boolean!
+      sitemap: Sitemap
+    }
+
+    type S3Object implements Node {
+      Key: String!
+      Bucket: String!
+      ETag: String!
+      url: String!
+      LastModified: Date! @dateformat
+      Size: Int!
+      slug: String!
+      body: String!
+      basePath: String!
+      basePathWithVersion: String!
+      versionPath: String!
+      sitemap: Sitemap
+      pageNav: [PageNav]
+      title: String
     }
   `);
 };
