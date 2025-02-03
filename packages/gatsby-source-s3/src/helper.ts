@@ -185,6 +185,7 @@ const sanitizeOptions = {
     "address",
     "article",
     "aside",
+    "button",
     "footer",
     "header",
     "h1",
@@ -319,7 +320,8 @@ const sanitizeOptions = {
     ],
     video: ["controls", "height", "width", "id"],
     source: ["src", "type", "srcset", "alt", "media", "id"],
-    section: ["id"]
+    section: ["id"],
+    button: ["id", "name", "role", "tabindex", "aria-controls", "aria-selected", "class"],
   },
   // Lots of these won't come up by default because we don't allow them
   selfClosing: [
