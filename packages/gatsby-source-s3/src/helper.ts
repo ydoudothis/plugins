@@ -349,6 +349,36 @@ export function sanitizeText(htmlString: string) {
   return sanitizedText;
 }
 
+export function removeAllHTMLFromText(htmlString: string) {
+  const sanitizedText = sanitizeHtml(htmlString, {
+    allowedTags: [],
+    disallowedTagsMode: "discard",
+    allowedAttributes: {
+    },
+    allowedSchemes: [],
+    allowedSchemesByTag: { },
+    allowedSchemesAppliedToAttributes: [],
+    allowProtocolRelative: false,
+    enforceHtmlBoundary: false,
+    allowVulnerableTags: false,
+  });
+  return sanitizedText;
+}
+
+export function unEscapeHTML(str){
+  return  str.replace(
+    /&amp;|&lt;|&gt;|&#39;|&quot;/g,
+    tag =>
+      ({
+        '&amp;': '&',
+        '&lt;': '<',
+        '&gt;': '>',
+        '&#39;': "'",
+        '&quot;': '"'
+      }[tag] || tag)
+    );
+  }
+
 export async function processBucketObjects(objects, versions, createNode, createNodeId, createContentDigest) {
 
   // create file nodes
@@ -461,7 +491,7 @@ export async function processBucketObjects(objects, versions, createNode, create
                 id: "",
                 level: 0,
                 path: `${i + 1}-${sectionId}`,
-                title: headline.innerHTML
+                title: unEscapeHTML(removeAllHTMLFromText(headline.innerHTML))
               },
               subsections: []
             }
@@ -516,7 +546,7 @@ export async function processBucketObjects(objects, versions, createNode, create
                   id: "",
                   level: 0,
                   path: `#${cSubSection.id}`,
-                  title: subHeadline.innerHTML
+                  title: unEscapeHTML(removeAllHTMLFromText(subHeadline.innerHTML))
                 }
               });
             }
@@ -541,7 +571,7 @@ export async function processBucketObjects(objects, versions, createNode, create
             versionPath: versionPath,
             sitemap: sitemap,
             pageNav: pageNav,
-            title: sectionHeadline?.innerHTML,
+            title: unEscapeHTML(removeAllHTMLFromText(sectionHeadline?.innerHTML)),
             internal: {
               type: "S3Object",
               content: JSON.stringify(object),

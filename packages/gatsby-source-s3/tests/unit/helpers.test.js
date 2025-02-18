@@ -1,5 +1,5 @@
 
-import { processBucketObjectsVersions, processBucketObjects, fixInternalLinks, fixBase64SvgXmlImages, sanitizeText } from "../../src/helper";
+import { processBucketObjectsVersions, processBucketObjects, fixInternalLinks, fixBase64SvgXmlImages, sanitizeText, removeAllHTMLFromText, unEscapeHTML   } from "../../src/helper";
 import { parseHTML } from 'linkedom/cached';
 
 
@@ -177,7 +177,7 @@ test('processBucketObjects - one section with meta tags', () => {
             },
             Bucket: 'ublox-documentation-test',
             url: 'https://www.u-blox.com/en/documentation/test-1',
-            bodyString: "<!DOCTYPE html><head><title>documentation title</title></head><body><section id='headline-1'><h1>headline</h1><div>Lorem Ipsum</div></section></body></html>",
+            bodyString: "<!DOCTYPE html><head><title>documentation title</title></head><body><section id='headline-1'><h1>headline <a class='reference'><span>APIs</span></a></h1><div>Lorem Ipsum</div><section><h2>title<span>2</span></h2></section></section></body></html>",
         }
     ];
 
@@ -201,13 +201,13 @@ test('processBucketObjects - one section with meta tags', () => {
     expect(siteMapNode.sitemap.isVersion).toEqual(false);
     expect(siteMapNode.sitemap.title).toEqual("documentation title");
     expect(siteMapNode.sitemap.subsections.length).toEqual(1);
-    expect(siteMapNode.sitemap.subsections[0].section.title).toEqual("headline");
+    expect(siteMapNode.sitemap.subsections[0].section.title).toEqual("headline APIs");
     expect(siteMapNode.sitemap.subsections[0].section.path).toEqual("1-headline-1");
     // expect(siteMapNode.sitemap.).toEqual("");
 
     expect(contentNode.Key).toEqual("production/rst-examples/index.html");
-    expect(contentNode.body).toEqual('<section id="headline-1"><h1>headline</h1><div>Lorem Ipsum</div></section>');
-    expect(contentNode.title).toEqual("headline");
+    expect(contentNode.body).toEqual('<section id="headline-1"><h1>headline <a class="reference"><span>APIs</span></a></h1><div>Lorem Ipsum</div><section><h2>title<span>2</span></h2></section></section>');
+    expect(contentNode.title).toEqual("headline APIs");
 });
 
 
@@ -331,4 +331,22 @@ test('sanitizeHTML', () => {
     const updatedHTML = sanitizeText(html);
 
     expect(updatedHTML).toEqual("<html><head><title>Markdown Examples</title><meta name=\"release\" content=\"v23.10\" /><meta name=\"version\" content=\"v23.10.78326\" /><meta name=\"copyright\" content=\"2024, u-blox\" /></head><body>test</body></html>");
+});
+
+
+test('removeAllHTMLFromText', () => {
+
+    const html = "<html><head><title>Markdown Examples</title><meta name='release' content='v23.10'><meta name='version' content='v23.10.78326'><meta name='copyright' content='2024, u-blox'></head><body><script>alert();</script>test<style>body {background-color: linen;}</style><iframe src='https://www.google.de' /></body>"
+    const updatedHTML = removeAllHTMLFromText(html);
+
+    expect(updatedHTML).toEqual("Markdown Examplestest");
+});
+
+
+test('unEscapeHTML', () => {
+
+    const html = "hello &amp; test &lt;&gt;&#39;"
+    const updatedHTML = unEscapeHTML(html);
+
+    expect(updatedHTML).toEqual("hello & test <>'");
 });
