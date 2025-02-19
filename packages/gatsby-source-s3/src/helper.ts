@@ -365,7 +365,7 @@ export function removeAllHTMLFromText(htmlString: string) {
   return sanitizedText;
 }
 
-export function unEscapeHTML(str){
+export function unEscapeHTML(str: string){
   return  str.replace(
     /&amp;|&lt;|&gt;|&#39;|&quot;/g,
     tag =>
@@ -378,6 +378,62 @@ export function unEscapeHTML(str){
       }[tag] || tag)
     );
   }
+
+export function isValidHttpUrl(str: string): boolean {
+  let url;
+  
+  try {
+    url = new URL(str);
+  } catch (_) {
+    return false;  
+  }
+
+  return  url.protocol === "https:";
+}
+
+
+export function isValidEmail(email: string): boolean {
+  /**
+   * Regex breakdown (comments spaced for clarity):
+   *
+   * ^                       Start of string
+   * [^\s@:]+                Local part: 1+ chars, cannot include whitespace, '@', or ':'
+   * @                       Literal '@'
+   * (?:                     Begin group (for one or more domain labels except the final label)
+   *   [A-Za-z0-9]           1st char of domain label must be alphanumeric
+   *   (?:[A-Za-z0-9-]*[A-Za-z0-9])? 
+   *       Zero or more of (alphanumeric or '-') but cannot end with '-'
+   *   \.
+   * )+                      This group repeats one or more times (ensuring at least one dot)
+   * [A-Za-z0-9]             Final label must start with an alphanumeric
+   * (?:[A-Za-z0-9-]*[A-Za-z0-9]){1,} 
+   *    - The final label has at least 2 total characters (and no leading/trailing '-')
+   * $                       End of string
+   */
+  const emailRegex = new RegExp(
+    '^' +
+      '[^\\s@:]+' +             // local part
+      '@' +
+      '(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\\.)+' + // one or more labels + dot
+      '[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9]){1,}' +      // final label (>=2 chars)
+    '$'
+  );
+
+  return emailRegex.test(email);
+}
+
+
+export function isValidDate(date: string): boolean {
+  const converted = Date.parse(date);
+
+  if(isNaN(converted)) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
+
 
 export async function processBucketObjects(objects, versions, createNode, createNodeId, createContentDigest) {
 
@@ -462,6 +518,11 @@ export async function processBucketObjects(objects, versions, createNode, create
         }
         const sections = document.querySelectorAll("body > section");
 
+        const contactEmail = document.head.querySelector('meta[name="contact_email"]')?.content ?? '';
+        const contactURL = document.head.querySelector('meta[name="contact_url"]')?.content ?? '';
+        const lastUpdated = document.head.querySelector('meta[name="last_updated"]')?.content ?? '';
+      
+
         fixInternalLinks(document, sections, basePathWithVersion);
 
         // console.log(dom.window.document.body);
@@ -475,6 +536,9 @@ export async function processBucketObjects(objects, versions, createNode, create
           subsections: [],
           basePath: basePath,
           isVersion: isVersion,
+          contactEmail: isValidEmail(contactEmail) ? contactEmail : '',
+          contactURL: isValidHttpUrl(contactURL) ? contactURL : '',
+          lastUpdated:  isValidDate(lastUpdated) ? lastUpdated : '',
           versions: versions[basePath]
         }
 

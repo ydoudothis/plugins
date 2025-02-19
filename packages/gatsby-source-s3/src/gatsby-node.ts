@@ -121,6 +121,9 @@ export const createSchemaCustomization: GatsbyNode["createSchemaCustomization"] 
       level: Int!
       path: String!
       title: String!
+      contactEmail: String!,
+      contactURL: String!,
+      lastUpdated: String!,
       basePath: String!
       isVersion: Boolean!
       versions: [Versions!]

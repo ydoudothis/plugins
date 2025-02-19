@@ -1,5 +1,5 @@
 
-import { processBucketObjectsVersions, processBucketObjects, fixInternalLinks, fixBase64SvgXmlImages, sanitizeText, removeAllHTMLFromText, unEscapeHTML   } from "../../src/helper";
+import { processBucketObjectsVersions, processBucketObjects, fixInternalLinks, fixBase64SvgXmlImages, sanitizeText, removeAllHTMLFromText, unEscapeHTML, isValidHttpUrl, isValidEmail, isValidDate   } from "../../src/helper";
 import { parseHTML } from 'linkedom/cached';
 
 
@@ -200,6 +200,9 @@ test('processBucketObjects - one section with meta tags', () => {
     expect(siteMapNode.sitemap.basePath).toEqual("/rst-examples");
     expect(siteMapNode.sitemap.isVersion).toEqual(false);
     expect(siteMapNode.sitemap.title).toEqual("documentation title");
+    expect(siteMapNode.sitemap.contactEmail).toEqual("");
+    expect(siteMapNode.sitemap.contactURL).toEqual("");
+    expect(siteMapNode.sitemap.lastUpdated).toEqual("");
     expect(siteMapNode.sitemap.subsections.length).toEqual(1);
     expect(siteMapNode.sitemap.subsections[0].section.title).toEqual("headline APIs");
     expect(siteMapNode.sitemap.subsections[0].section.path).toEqual("1-headline-1");
@@ -225,7 +228,7 @@ test('processBucketObjects - multiple sections with meta tags', () => {
             },
             Bucket: 'ublox-documentation-test',
             url: 'https://www.u-blox.com/en/documentation/test-1',
-            bodyString: "<html><head><title>documentation title</title></head><body><section id='headline-1'><h1>headline</h1><div>Lorem Ipsum</div><section id='headline2'><h2>subheadline</h2>test</section></section><section id='headline3'><h1>headline3</h1><div>lorem ipsum 2</div></section><section id='headline4'><h1>headline 4</h1><div>lorem ipsum 3</div></section></body></html>",
+            bodyString: "<html><head><title>documentation title</title><meta name='contact_email' content='support-markdown@u-blox.com'><meta name='contact_url' content='https://markdown.u-blox.com'><meta name='last_updated' content='2024-12-01'></head><body><section id='headline-1'><h1>headline</h1><div>Lorem Ipsum</div><section id='headline2'><h2>subheadline</h2>test</section></section><section id='headline3'><h1>headline3</h1><div>lorem ipsum 2</div></section><section id='headline4'><h1>headline 4</h1><div>lorem ipsum 3</div></section></body></html>",
         }
     ];
 
@@ -250,6 +253,9 @@ test('processBucketObjects - multiple sections with meta tags', () => {
     expect(siteMapNode.sitemap.basePath).toEqual("/rst-examples");
     expect(siteMapNode.sitemap.isVersion).toEqual(false);
     expect(siteMapNode.sitemap.title).toEqual("documentation title");
+    expect(siteMapNode.sitemap.contactEmail).toEqual("support-markdown@u-blox.com");
+    expect(siteMapNode.sitemap.contactURL).toEqual("https://markdown.u-blox.com");
+    expect(siteMapNode.sitemap.lastUpdated).toEqual("2024-12-01");
     expect(siteMapNode.sitemap.subsections.length).toEqual(3);
     expect(siteMapNode.sitemap.subsections[0].section.title).toEqual("headline");
     expect(siteMapNode.sitemap.subsections[0].section.path).toEqual("1-headline-1");
@@ -349,4 +355,55 @@ test('unEscapeHTML', () => {
     const updatedHTML = unEscapeHTML(html);
 
     expect(updatedHTML).toEqual("hello & test <>'");
+});
+
+test('isValidHttpUrl', () => {
+    expect(isValidHttpUrl('https://www.u-blox.com')).toEqual(true);
+    expect(isValidHttpUrl('https://beta.u-blox.com')).toEqual(true);
+    expect(isValidHttpUrl('http://www.u-blox.com')).toEqual(false);
+    expect(isValidHttpUrl('www.u-blox.com')).toEqual(false);
+});
+
+test('isValidEmail', () => {
+    expect(isValidEmail('mail@u-blox.com')).toEqual(true);
+    expect(isValidEmail('test+1@u-blox.com')).toEqual(true);
+    expect(isValidEmail('u-blox.com')).toEqual(false);
+    expect(isValidEmail('mailto:mail@u-blox.com')).toEqual(false);
+    expect(isValidEmail('user-name@example.com')).toEqual(true);
+    expect(isValidEmail('user@-example.com')).toEqual(false);
+    expect(isValidEmail('user@.example.com')).toEqual(false);
+    expect(isValidEmail('user@example.c')).toEqual(false);
+
+    expect(isValidEmail("test@example.com")).toEqual(true);
+
+    // Missing '@'
+    expect(isValidEmail("testexample.com")).toEqual(false);
+
+    // Missing domain
+    expect(isValidEmail("test@")).toEqual(false);
+
+    // Missing username
+    expect(isValidEmail("@example.com")).toEqual(false);
+
+    // Contains spaces
+    expect(isValidEmail("test @example.com")).toEqual(false);
+
+    // Contains multiple '@'
+    expect(isValidEmail("te@st@example.com")).toEqual(false);
+
+    // Valid email with subdomain
+    expect(isValidEmail("user@sub.example.com")).toEqual(true);
+
+    // Valid email with plus sign
+    expect(isValidEmail("user+label@example.io")).toEqual(true);
+});
+
+test('isValidDate', () => {
+    expect(isValidDate('2024-10-15')).toEqual(true);
+    expect(isValidDate('2024/12/15')).toEqual(true);
+    expect(isValidDate('15. Dec. 2024')).toEqual(true);
+    expect(isValidDate('3464562342')).toEqual(false);
+    expect(isValidDate('hello')).toEqual(false);
+    expect(isValidDate('test@u-blox.com')).toEqual(false);
+    expect(isValidDate('https://www.u-blox.com')).toEqual(false);
 });
