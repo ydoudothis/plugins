@@ -159,9 +159,10 @@ export function fixInternalLinks(document, sections, basePathWithVersion: string
               break;
             } else {
               if (sectionId == currentId || section.querySelector(currentHrefAsSelector))  {
-                currentLink.href = (sectionIndex + 1) + '-' + sectionId + currentHref;
-                idToSectionHref[currentId] = (sectionIndex + 1) + '-' + sectionId;
-                // currentLink.href = "/en/documentation/" + basePathWithVersion + '/' + (sectionIndex + 1) + '-' + sectionId + currentHref;
+                // currentLink.href = (sectionIndex + 1) + '-' + sectionId + currentHref;
+                currentLink.href = "/en/documentation" + basePathWithVersion + '/' + (sectionIndex + 1) + '-' + sectionId + currentHref;
+                
+                idToSectionHref[currentId] = "/en/documentation" + basePathWithVersion + '/' + (sectionIndex + 1) + '-' + sectionId 
                 // console.log(currentLink.href);
                 break;
               }

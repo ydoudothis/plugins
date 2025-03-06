@@ -309,8 +309,8 @@ test('fixInternalLinks', () => {
 
 
     expect(document.getElementById('link\\.1').getAttribute('href')).toEqual('#headline-1');
-    expect(document.getElementById('link2').getAttribute('href')).toEqual('2-headline3#headline3');
-    expect(document.getElementById('link3').getAttribute('href')).toEqual('1-headline-1#link.1');
+    expect(document.getElementById('link2').getAttribute('href')).toEqual('/en/documentationtest/2-headline3#headline3');
+    expect(document.getElementById('link3').getAttribute('href')).toEqual('/en/documentationtest/1-headline-1#link.1');
 });
 
 
